@@ -72,7 +72,7 @@ for ($i = 0; $i -lt $AllRedisCaches.Count; $i++) {
 }
 $OutputJson = $OutputJson + ']'
 # Iterate through the cahces to get key
-$OutputJson | ConvertTo-Json -Compress | Out-File -FilePath 'B:\a.json'
+$OutputJson | Out-File -FilePath '.\a.json'
 
 
 # Save in the JSOn format supported by https://github.com/uglide/RedisDesktopManager/
