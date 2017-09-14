@@ -5,45 +5,79 @@ Write-Host 'You are using Redis Cache Json Generator'
 Write-Host 'By using this script, you are not agreeing to any liability or licences :)'
 Write-Host 'This script may install a few powershell modules to work, mostly around Azure CLI.'
 
-# # Should we uninstall the modules 
-
-# if ($UninstallModules -eq 'Y' -or $UninstallModules -eq 'y') {
-#     set-variable -name UninstallModules -value TRUE
-# }
-# else {
-#     set-variable -name UninstallModules -value FALSE
-# }
-
-# Check if PowerShellGet is installed
-# $IsPowerShellGetInstalled = Get-Module PowerShellGet -list | Select-Object Name,Version,Path
-
-# Give instructions to install powershellget
-# https://docs.microsoft.com/en-us/powershell/azure/install-azurerm-ps?view=azurermps-4.3.1#how-to-get-powershellget
-
+# Take the output path
+$OutputPath = Read-Host 'Enter the drop location for the final json file : '
+# Check if the path is valid else ask for a file name
 
 # Check if Azure Rm is available
+$IsAzureInstalled = Get-Module Azure -list | Select-Object Name, Version, Path
 
-# Install Azure Rm if unavailable
+if ($IsAzureInstalled) {
+    Write-Host 'You already have Azure powershell installed. Skipping installation.'
+}
+else {
+    # Check if PowerShellGet is installed
+    $IsPowerShellGetInstalled = Get-Module PowerShellGet  -list | Select-Object Name, Version, Path
+    if ($IsPowerShellGetInstalled) {
+        Write-Host 'You do not have Powershell get installed. Skipping installation.'
+        # Give instructions to install powershellget
+        Write-Host 'Visit https://docs.microsoft.com/en-us/powershell/azure/install-azurerm-ps?view=azurermps-4.3.1#how-to-get-powershellget for more information'
+        Exit-PSSession
+    }    
+    Write-Host 'You do not have Azure get installed. Initiating installation.'
+    # Install Azure Rm if unavailable
+    Install-Module AzureRM
+    Import-Module AzureRM
+}
 
 # Login to Azure RM account
-# Login-AzureRmAccount
+Login-AzureRmAccount
 
 # Get Azure subscriptions on this account
-$AllAccounts = Get-AzureRmSubscription
-$i = 0
-foreach ($account in $AllAccounts) {
-    Write-Host $i '.' $account.Name
-    $i++
-}
-$AccountIndex = Read-Host -Prompt 'Select subscription by index above'
-
+$AllSubscriptionsForThisAccount = Get-AzureRmSubscription
 
 # Provide option to select a subscription
-# It would be better if the user can select a number
-Select-AzureRmSubscription -SubscriptionName $AllAccounts[$AccountIndex].Name
+$i = 0
+Write-Host 'You have the following subscriptions available.'
+foreach ($subscription in $AllSubscriptionsForThisAccount) {
+    Write-Host $i '.' $subscription.Name
+    $i++
+}
+$SubscriptionIndex = Read-Host -Prompt 'Select subscription by index above'
 
-# Ge Redis account details
+if ([convert]::ToInt32($SubscriptionIndex, 10) -ge $i -or [convert]::ToInt32($SubscriptionIndex, 10) -lt 0) {
+    Write-Host 'Trying to act coy, are we? rerun the script now. :P'
+    Exit-PSSession
+}
+
+Select-AzureRmSubscription -SubscriptionName $AllSubscriptionsForThisAccount[$SubscriptionIndex].Name
+
+# Get Redis account details
 $AllRedisCaches = Get-AzureRmRedisCache
+
+# Iterate through the caches to get key and form the JSON
+
+# Save in the JSOn format supported by https://github.com/uglide/RedisDesktopManager/
+
+# Name               : modiot-ci-dev-confroom
+# Id                 : /subscriptions/987e6029-fd7c-482b-81ad-7714e25061fe/resourceGroups/modiot-ci-dev/providers/Microsoft.Cache/Red
+#                      is/modiot-ci-dev-confroom
+# Location           : West US
+# Type               : Microsoft.Cache/Redis
+# HostName           : modiot-ci-dev-confroom.redis.cache.windows.net
+# Port               : 6379
+# ProvisioningState  : Succeeded
+# SslPort            : 6380
+# RedisConfiguration : {[maxmemory-reserved, 50], [maxclients, 1000], [maxfragmentationmemory-reserved, 50], [maxmemory-delta, 50]}
+# EnableNonSslPort   : False
+# RedisVersion       : 3.2.7
+# Size               : 1GB
+# Sku                : Standard
+# ResourceGroupName  : modiot-ci-dev
+# SubnetId           :
+# StaticIP           :
+# TenantSettings     :
+# ShardCount         :
 
 $OutputJson = '['
 for ($i = 0; $i -lt $AllRedisCaches.Count; $i++) {
@@ -71,28 +105,5 @@ for ($i = 0; $i -lt $AllRedisCaches.Count; $i++) {
     }
 }
 $OutputJson = $OutputJson + ']'
-# Iterate through the cahces to get key
-$OutputJson | Out-File -FilePath '.\a.json'
 
-
-# Save in the JSOn format supported by https://github.com/uglide/RedisDesktopManager/
-
-# Name               : modiot-ci-dev-confroom
-# Id                 : /subscriptions/987e6029-fd7c-482b-81ad-7714e25061fe/resourceGroups/modiot-ci-dev/providers/Microsoft.Cache/Red
-#                      is/modiot-ci-dev-confroom
-# Location           : West US
-# Type               : Microsoft.Cache/Redis
-# HostName           : modiot-ci-dev-confroom.redis.cache.windows.net
-# Port               : 6379
-# ProvisioningState  : Succeeded
-# SslPort            : 6380
-# RedisConfiguration : {[maxmemory-reserved, 50], [maxclients, 1000], [maxfragmentationmemory-reserved, 50], [maxmemory-delta, 50]}
-# EnableNonSslPort   : False
-# RedisVersion       : 3.2.7
-# Size               : 1GB
-# Sku                : Standard
-# ResourceGroupName  : modiot-ci-dev
-# SubnetId           :
-# StaticIP           :
-# TenantSettings     :
-# ShardCount         :
+$OutputJson | Out-File -FilePath $OutputPath 
