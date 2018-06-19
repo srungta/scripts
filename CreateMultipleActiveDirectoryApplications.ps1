@@ -59,9 +59,6 @@ if ([convert]::ToInt32($SubscriptionIndex, 10) -ge $i -or [convert]::ToInt32($Su
 
 Select-AzureRmSubscription -SubscriptionName $AllSubscriptionsForThisAccount[$SubscriptionIndex].Name
 
-Write-Host $PathToJson
-
-
 $content = Get-Content -Raw -Path $PathToJson | ConvertFrom-Json
 
 foreach ($application in $content) {
