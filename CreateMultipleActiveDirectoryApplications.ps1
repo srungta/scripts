@@ -8,8 +8,8 @@ Write-Host 'This script may install a few powershell modules to work, mostly aro
 # Take the output path
 $PathToJson = Read-Host -Prompt 'Provide path to the config json file :' 
 if ([string]::IsNullOrWhiteSpace($PathToJson)) {
-    Write-Host 'Using default value "./CreateMultipleActiveDirectoryApplications.json".'
-    $PathToJson = './CreateMultipleActiveDirectoryApplications.json'
+    Write-Host "Using default value 'templates/multiple-aad-application-config.json'."
+    $PathToJson = './templates/multiple-aad-application-config.json'
 } 
 # Check if the path is valid else ask for a file name
 
@@ -66,6 +66,9 @@ $content = Get-Content -Raw -Path $PathToJson | ConvertFrom-Json
 
 foreach ($application in $content) {
     Try {
+        # The cmdlet throiws non terminating erros which cannot be caught.
+        # To see cleaner errors, uncomment the line below.
+        # $ErrorActionPreference = "Stop"
         New-AzureRmADApplication -DisplayName $application.DisplayName -IdentifierUris $application.IdentifierUris -ReplyUrls $application.ReplyUrls    
     }
     Catch {
