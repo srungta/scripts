@@ -66,7 +66,13 @@ foreach ($application in $content) {
         # The cmdlet throiws non terminating erros which cannot be caught.
         # To see cleaner errors, uncomment the line below.
         # $ErrorActionPreference = "Stop"
-        New-AzureRmADApplication -DisplayName $application.DisplayName -IdentifierUris $application.IdentifierUris -ReplyUrls $application.ReplyUrls    
+        $ExistingApplication = Get-AzureRmADApplication -IdentifierUri $application.IdentifierUri
+        if ($ExistingApplication.Count -gt 0) {            
+            Write-Host 'Application with the name' $application.DisplayName ' already exists.'
+        }
+        else {
+            New-AzureRmADApplication -DisplayName $application.DisplayName -IdentifierUris $application.IdentifierUri -ReplyUrls $application.ReplyUrls       
+        }
     }
     Catch {
         Write-Host 'Could not create application '
