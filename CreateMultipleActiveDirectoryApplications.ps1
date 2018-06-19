@@ -1,12 +1,12 @@
 # Introduction
 
 Write-Host '...Hi...'
-Write-Host 'You are using Redis Cache Json Generator'
+Write-Host 'You are using a script to create multiple aad applications quickly'
 Write-Host 'By using this script, you are not agreeing to any liability or licences :)'
 Write-Host 'This script may install a few powershell modules to work, mostly around Azure CLI.'
 
 # Take the output path
-$PathToJson = Read-Host -Prompt 'Select subscription by index above' 
+$PathToJson = Read-Host -Prompt 'Provide path to the config json file :' 
 if ([string]::IsNullOrWhiteSpace($PathToJson)) {
     Write-Host 'Using default value "./CreateMultipleActiveDirectoryApplications.json".'
     $PathToJson = './CreateMultipleActiveDirectoryApplications.json'
@@ -65,5 +65,11 @@ Write-Host $PathToJson
 $content = Get-Content -Raw -Path $PathToJson | ConvertFrom-Json
 
 foreach ($application in $content) {
-    New-AzureRmADApplication -DisplayName $application.DisplayName -IdentifierUris $application.IdentifierUris -ReplyUrls $application.ReplyUrls
+    Try {
+        New-AzureRmADApplication -DisplayName $application.DisplayName -IdentifierUris $application.IdentifierUris -ReplyUrls $application.ReplyUrls    
+    }
+    Catch {
+        Write-Host 'Could not create application '
+        Write-Host  $application.DisplayName 
+    }
 }
