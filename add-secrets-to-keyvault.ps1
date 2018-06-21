@@ -1,15 +1,17 @@
 # Introduction
 
 Write-Host '...Hi...'
-Write-Host 'You are using a script to bind multiple aad applications to certificates quickly'
+Write-Host 'You are using a script to add multiple secrets to keyvault quickly'
 Write-Host 'By using this script, you are not agreeing to any liability or licences :)'
 Write-Host 'This script may install a few powershell modules to work, mostly around Azure CLI.'
 
 # Take the output path
 $PathToJson = Read-Host -Prompt 'Provide path to the config json file :' 
+$keyvaultName = Read-Host -Prompt "Enter name of keyvault : "
+
 if ([string]::IsNullOrWhiteSpace($PathToJson)) {
-    Write-Host "Using default value 'templates/add-cert-to-aad-application.json'."
-    $PathToJson = './templates/add-cert-to-aad-application.json'
+    Write-Host "Using default value 'templates/add-secrets-to-keyvault.json'."
+    $PathToJson = './templates/add-secrets-to-keyvault.json'
 } 
 # Check if the path is valid else ask for a file name
 
@@ -63,12 +65,13 @@ $content = Get-Content -Raw -Path $PathToJson | ConvertFrom-Json
 
 foreach ($application in $content) {
     Try {
-        Write-Host 'Adding to application' $application.applicationName
-        
-        $x509Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
-        $x509Cert.Import($application.certificateLocation)
-        $credValue = [System.Convert]::ToBase64String($x509Cert.GetRawCertData())
-        New-AzureRmADAppCredential -ApplicationId $application.applicationId -CertValue $credValue
+        Write-Host 'Adding secret ' $application.secretName
+
+        $Secret = ConvertTo-SecureString -String $application.secretValue -AsPlainText -Force
+        $Expires = (Get-Date).AddYears(2).ToUniversalTime()
+        $NBF = (Get-Date).ToUniversalTime()
+        $ContentType = 'certificate password'
+        Set-AzureKeyVaultSecret -VaultName $keyvaultName -Name $application.secretName -SecretValue $Secret -Expires $Expires -NotBefore $NBF -ContentType $ContentType
 
     }
     Catch {
