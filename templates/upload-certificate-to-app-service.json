@@ -1,0 +1,12 @@
+{
+    "resourceGroupName": "xxxxxxxxx",
+    "keyvaultName": "xxxxxxxxx",
+    "certificateFolder": "xxxxxxxxx",
+    "certificates": [
+        {
+            "certificateName": "xxxxxxxxx",
+            "webAppName": "xxxxxxxxx",
+            "certificatePasswordSecretName": "xxxxxxxxx"
+        }
+    ]
+}
