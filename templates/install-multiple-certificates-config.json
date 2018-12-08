@@ -1,0 +1,9 @@
+{
+    "keyvaultName": "<keyvault name>",
+    "certificates": [
+        {
+            "certificateName": "<certificate name>",
+            "certificatePasswordSecretName": "<certificate-password-name-in-the-keyvault>"
+        }
+    ]
+}
