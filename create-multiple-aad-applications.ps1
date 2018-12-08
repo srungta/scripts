@@ -11,7 +11,6 @@ if ([string]::IsNullOrWhiteSpace($PathToJson)) {
     Write-Host "Using default value 'templates/multiple-aad-application-config.json'."
     $PathToJson = './templates/multiple-aad-application-config.json'
 } 
-# Check if the path is valid else ask for a file name
 
 # Check if Azure Rm is available
 $IsAzureInstalled = Get-Module AzureRm -list | Select-Object Name, Version, Path
@@ -33,11 +32,41 @@ else {
     Install-Module AzureRM
     Import-Module AzureRM
 }
-
-        
+       
 # Login to Azure RM account if required
 if ([string]::IsNullOrEmpty($(Get-AzureRmContext).Account)) {
     Login-AzureRmAccount
+}
+
+
+$IsAzureInstalled = Get-Module AzureAd -list | Select-Object Name, Version, Path
+
+if ($IsAzureInstalled) {
+    Write-Host 'You already have AzureAD powershell installed. Skipping installation.'
+}
+else {
+    # Check if PowerShellGet is installed
+    $IsPowerShellGetInstalled = Get-Module PowerShellGet  -list | Select-Object Name, Version, Path
+    if ($IsPowerShellGetInstalled) {
+        Write-Host 'You do not have Powershell get installed. Skipping installation.'
+        # Give instructions to install powershellget
+        Write-Host 'Visit https://docs.microsoft.com/en-us/powershell/azure/install-azurerm-ps?view=azurermps-4.3.1#how-to-get-powershellget for more information'
+        Exit-PSSession
+    }    
+    Write-Host 'You do not have Azure get installed. Initiating installation.'
+    # Install Azure Rm if unavailable
+    Install-Module AzureAD
+    Import-Module AzureAD
+}
+        
+# Login to Azure RM account if required
+Try {
+    $var = Get-AzureADTenantDetail 
+} 
+Catch [Microsoft.Open.Azure.AD.CommonLibrary.AadNeedAuthenticationException] { 
+    Write-Host "You're not connected.";
+    $Credential = Get-Credential
+    Connect-AzureAD -Credential $Credential
 }
 
 # Get Azure subscriptions on this account
@@ -67,11 +96,28 @@ foreach ($application in $content) {
         # To see cleaner errors, uncomment the line below.
         # $ErrorActionPreference = "Stop"
         $ExistingApplication = Get-AzureRmADApplication -IdentifierUri $application.IdentifierUri
-        if ($ExistingApplication.Count -gt 0) {            
-            Write-Host 'Application with the name' $application.DisplayName ' already exists.'
+        if ($ExistingApplication.Count -eq 0) {     
+            New-AzureRmADApplication -DisplayName $application.DisplayName -IdentifierUris $application.IdentifierUri -ReplyUrls $application.ReplyUrls       
         }
         else {
-            New-AzureRmADApplication -DisplayName $application.DisplayName -IdentifierUris $application.IdentifierUri -ReplyUrls $application.ReplyUrls       
+            Write-Host 'Application with the name' $application.DisplayName ' already exists.'
+            Write-Host 'Gettings owners of the application'
+            # SHow current owners
+            $Owners = Get-AzureADApplicationOwner -ObjectId $ExistingApplication[0].ObjectId
+            Write-Host 'There are ' $Owners.Count 'owners of this application'
+            foreach ($owner in $Owners) {
+                Write-Host $i '.' $owner.DisplayName '<' $owner.UserPrincipalName '>' 
+                $i++
+            }
+            
+            $NewOwners = $application.Owners
+            foreach ($newOwner in $NewOwners) {
+                if (-Not ($newOwner -in $Owners)) {
+                    $User = Get-AzureRmADUser -UserPrincipalName $newOwner
+                    Add-AzureADApplicationOwner -ObjectId $ExistingApplication[0].ObjectId -RefObjectId $User.Id
+                }
+            }
+
         }
     }
     Catch {
