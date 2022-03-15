@@ -1,0 +1,16 @@
+{
+  "name": "@srungta/openurls",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Shaswat Rungta",
+  "license": "MIT",
+  "dependencies": {
+    "node-fetch": "^3.2.3",
+    "open": "^8.4.0",
+    "request": "^2.88.2"
+  }
+}
